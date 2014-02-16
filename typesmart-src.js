@@ -4,8 +4,9 @@ TypeSmart.smartDoubleQuote = function () {
     var cursor = Cursor.new ();
     
     // If the previous character is a whitespace,
+    // or opening parenthesize
     // insert opening quote, else insert cloning quote.
-    if (/^\s*$/.test (cursor.getTextBefore (1))) {
+    if (/^\s*$/.test (cursor.getTextBefore (1)) || /^\(*$/.test (cursor.getTextBefore (1))) {
         cursor.insert ("\u201C");
         return false;
     }
@@ -21,7 +22,7 @@ TypeSmart.smartSingleQuote = function () {
 
     // If the previous character is a whitespace,
     // insert opening quote, else insert cloning quote.
-    if (/^\s*$/.test (cursor.getTextBefore (1))) {
+    if (/^\s*$/.test (cursor.getTextBefore (1)) || /^\(*$/.test (cursor.getTextBefore (1))) {
         cursor.insert ("\u2018");
         return false;
     }
@@ -34,35 +35,37 @@ TypeSmart.smartSingleQuote = function () {
 
 TypeSmart.smartQuoteTextReplace = function (text) {
     // Strategy :
-    // 1) First replace all quotes following whitespace into opening ones.
+    // 1) First replace all quotes following whitespace (or parens) into opening ones.
     // 2) Then all those which are after any character into closing ones.
     // 3) Then remaining into opening ones.
     //
     // Example : (curley quotes are denoted by [ and ])
-    //    "He went home and called his mom. 'go home, don't stay' said mom."
+    // "He went home and called his mom. 'go home, don't stay' said mom."
     // 1) "He went home and called his mom. ‘go home, don't stay' said mom."
-    //                                      ^
+    // ^
     // 2) "He went home and called his mom. ‘go home, don’t stay’ said mom.”
-    //                                                   ^      ^          ^
+    // ^ ^ ^
     // 2) “He went home and called his mom. ‘go home, don’t stay’ said mom.”
-    //    ^
+    // ^
     return text.replace(/(\s)'/g, "$1\u2018") // Opening singles
                .replace(/(\s)"/g, "$1\u201c") // Opening doubles
-                                              // After one or more whitespace.
-        .replace(/(.)'/g, "$1\u2019")  // Closing singles
+               .replace(/(\()'/g, "$1\u2018") // Opening singles
+               .replace(/(\()"/g, "$1\u201c") // Opening doubles 
+                                              // After one or more whitespace or parens.
+        .replace(/(.)'/g, "$1\u2019") // Closing singles
         .replace(/(.)"/g, "$1\u201d") // Closing doubles
-        .replace(/'/g, "\u2018")  // Opening singles
+        .replace(/'/g, "\u2018") // Opening singles
         .replace(/"/g, "\u201c"); // Opening doubles
 };
 
 // format -> {
-//     'classname' : {
-//         'string to trigger func1' : func1,
-//         'string to trigger func2' : func2,
-//     },
-//     'classname2' : {
-//         'string to trigger func3' : func3,
-//     }
+// 'classname' : {
+// 'string to trigger func1' : func1,
+// 'string to trigger func2' : func2,
+// },
+// 'classname2' : {
+// 'string to trigger func3' : func3,
+// }
 // };
 TypeSmart.default_custom_triggers = {
     'typeSmartTypography' : {
@@ -73,13 +76,13 @@ TypeSmart.default_custom_triggers = {
 };
 
 // format -> {
-//     'classname' : {
-//         'string to be replaced' : 'replace with this one',
-//         'str2'                  : 'str3'
-//     },
-//     'classname2' : {
-//         'another str to be replaced' : 'another replacement'
-//     }
+// 'classname' : {
+// 'string to be replaced' : 'replace with this one',
+// 'str2' : 'str3'
+// },
+// 'classname2' : {
+// 'another str to be replaced' : 'another replacement'
+// }
 // };
 TypeSmart.default_replacements = {
     'typeSmartEmoticons' : {
@@ -133,44 +136,44 @@ TypeSmart.default_replacements = {
 };
 
 // format -> {
-//     'classname' : {
-//         'description of func1' : func1, // accepts and returns a string
-//         'description of func2' : func2
-//     },
-//     'classname2' : {
-//         'description of func3' : func3
-//     }
+// 'classname' : {
+// 'description of func1' : func1, // accepts and returns a string
+// 'description of func2' : func2
+// },
+// 'classname2' : {
+// 'description of func3' : func3
+// }
 // };
 TypeSmart.default_paste_modifiers = {
-    'typeSmartTypography' : {
+    'typeSmartTypography' : {} /*{
         'replace single and double dumb quotes with smart ones' :
         TypeSmart.smartQuoteTextReplace
-    }
+    }*/
 };
 
 // Merges two dicts and returns the result dict
 // SHALLOW COPY
 // mergeDicts(
-//     {
-//         1: 2,
-//         2: 4,
-//         3: {"foo": "bar"}
-//     },
-//     {
-//         9: 3,
-//         64: 8,
-//         3: {"blah": "bleh"}
-//     }
+// {
+// 1: 2,
+// 2: 4,
+// 3: {"foo": "bar"}
+// },
+// {
+// 9: 3,
+// 64: 8,
+// 3: {"blah": "bleh"}
+// }
 // );
 // -> {
-//     1: 2,
-//     2: 4,
-//     9: 3,
-//     64: 8,
-//     3: {
-//         "foo": "bar",
-//         "blah": "bleh"
-//     }
+// 1: 2,
+// 2: 4,
+// 9: 3,
+// 64: 8,
+// 3: {
+// "foo": "bar",
+// "blah": "bleh"
+// }
 // };
 TypeSmart.mergeDicts = function (dict1, dict2) {
     var result = {};
@@ -190,26 +193,26 @@ TypeSmart.mergeDicts = function (dict1, dict2) {
 
 // Convert patterns like
 // replacements = {
-//     '123' : "one-two-three",
-//     '[wow]' : '<exclamation>'
-//     '\spellcheck' : spellcheck_func
+// '123' : "one-two-three",
+// '[wow]' : '<exclamation>'
+// '\spellcheck' : spellcheck_func
 // }
-// 
+//
 // To replacement functions like
 // functions_from_patterns = {
-//     '3' : funcOneTwoThree,
-//     ']' : exclamationFunc
-//     'k' : spellcheck_func_modified
+// '3' : funcOneTwoThree,
+// ']' : exclamationFunc
+// 'k' : spellcheck_func_modified
 // }
-// 
+//
 // Where funcOneTwoThree() will be called whenever 3 is pressed.
 // when called, funcOneTwoThree will check whether the string "12"
 // is right before the cursor, and if it is, it should insert
 // delete that "12" and insert "one-two-three" instead.
-// 
+//
 // NOTE: These function, on a successful insertion, return false
-//       indicating that the insersion has been taken care of
-//       and the default response to keypress should not be executed.
+// indicating that the insersion has been taken care of
+// and the default response to keypress should not be executed.
 TypeSmart.makeReplacementFunctions = function (replacements) {
     var replacement_functions = {};
     for (replacement_string in replacements) {
@@ -284,26 +287,26 @@ Array.prototype.contains = function (element) {
 };
 
 // dict = {
-//     "key1" : {
-//         "foo" : bar,
-//         "blah" : bleh
-//     },
-//     "key2" : {
-//         1 : 2,
-//         3 : 4
-//     },
-//     5 : {
-//         9 : "nine",
-//         "88" : 99
-//     }
+// "key1" : {
+// "foo" : bar,
+// "blah" : bleh
+// },
+// "key2" : {
+// 1 : 2,
+// 3 : 4
+// },
+// 5 : {
+// 9 : "nine",
+// "88" : 99
+// }
 // };
 // whiteList = ["key1", 5, something_else];
 // unifyWithKeyWhitelist (dict, whiteList)
 // returns -> {
-//     'foo' : bar,
-//     'blah': bleh,
-//      9    : "nine",
-//     "88"  : 99
+// 'foo' : bar,
+// 'blah': bleh,
+// 9 : "nine",
+// "88" : 99
 // }
 TypeSmart.unifyWithKeyWhitelist = function (object, whiteList) {
     var final_object = {};
@@ -354,7 +357,7 @@ TypeSmart.getPasteHandler = function (class_list) {
         class_list
     );
     
-    var combined_from_pre_defined =  direct_replacements_func;
+    var combined_from_pre_defined = direct_replacements_func;
     for (discription in paste_modifiers) {
         var next_func = paste_modifiers [discription];
         combined_from_pre_defined = (
@@ -401,24 +404,24 @@ TypeSmart.getKeypressHandler = function (class_list) {
     // Strip the class names away
     // Say, replacement is as following.
     // replacements = {
-    //     "classname" : {
-    //         "str-to-replace" : "string-to-be-inserted"
-    //     },
-    //     "anotherClassname" : {
-    //         "str1" : "result1",
-    //         "str2" : "result2"
-    //     },
-    //     "thirdName" : {
-    //         "anotherpattern" : "whatever"
-    //     }
+    // "classname" : {
+    // "str-to-replace" : "string-to-be-inserted"
+    // },
+    // "anotherClassname" : {
+    // "str1" : "result1",
+    // "str2" : "result2"
+    // },
+    // "thirdName" : {
+    // "anotherpattern" : "whatever"
+    // }
     // };
-    // for 
+    // for
     // <element class="classname anotherClassname"></element>
     // final_replacements after stripping the classnames would be:
     // final_replacements = {
-    //     "str-to-replace" : "string-to-be-inserted",
-    //     "str1" : "result1",
-    //     "str2" : "result2"
+    // "str-to-replace" : "string-to-be-inserted",
+    // "str1" : "result1",
+    // "str2" : "result2"
     // };
     // As element is not of class "thirdName", its patterns are dropped.
     var final_replacements = TypeSmart.unifyWithKeyWhitelist (
@@ -429,8 +432,8 @@ TypeSmart.getKeypressHandler = function (class_list) {
     // Similarly, strip the classnames from the relpacement functions.
     // The resultant replacement_functions will be of the form
     // replacement_functions = {
-    //     'string to trigger the function' : function_to_be_executed,
-    //     'another string' : another_func
+    // 'string to trigger the function' : function_to_be_executed,
+    // 'another string' : another_func
     // };
     // This means when 'another string' is typed,
     // another_func () will be called.
@@ -478,13 +481,15 @@ TypeSmart.attachHandlers = function (element) {
   
 TypeSmart.init = function () {
     // Load libcursor
-    var libcursor = document.createElement ("script");
+   /*
+   var libcursor = document.createElement ("script");
     libcursor.setAttribute ('type', 'text/javascript');
     libcursor.setAttribute (
         'src',
         '//sujeetgholap.github.io/libcursor/libcursor.js'
     );
     document.head.appendChild (libcursor);
+    */
 
     // Attach keypress handlers to textareas and contenteditables.
     var attachableElements = document.getElementsByClassName ('typeSmart');
